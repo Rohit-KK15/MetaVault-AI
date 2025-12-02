@@ -15,6 +15,16 @@ export const envSchema = z.object({
 	ADK_DEBUG: z.coerce.boolean().default(false),
 	OPEN_ROUTER_KEY: z.string().min(1),
 	LLM_MODEL: z.string().default("openai/gpt-4.1"),
+	RPC_URL: z.string().min(1),
+	VAULT_ADDRESS: z.string().min(1),
+	ROUTER_ADDRESS: z.string().min(1),
+	STRATEGY_LEVERAGE_ADDRESS: z.string().min(1),
+	STRATEGY_AAVE_ADDRESS: z.string().min(1),
+	MOCK_AAVE_POOL_ADDRESS: z.string().min(1),
+	MOCK_SWAP_ROUTER_ADDRESS: z.string().min(1),
+	MOCK_PDP_ADDRESS: z.string().min(1),
+	LINK_ADDRESS: z.string().min(1),
+	WETH_ADDRESS: z.string().min(1)
 });
 
 /**
