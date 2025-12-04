@@ -55,3 +55,5 @@ export function StrategyCard({ strategy, balance, target, totalManaged }: Strate
   );
 }
 
+
+

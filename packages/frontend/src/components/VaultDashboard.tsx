@@ -8,7 +8,7 @@ import { DepositModal } from "./DepositModal";
 import { WithdrawModal } from "./WithdrawModal";
 import { StrategyCard } from "./StrategyCard";
 import { ActivityCard } from "./ActivityCard";
-import { TrendingUp, DollarSign, PieChart } from "lucide-react";
+import { TrendingUp, DollarSign, PieChart, Wallet, ArrowRightLeft, Sprout } from "lucide-react";
 
 export function VaultDashboard() {
   const { address, isConnected } = useAccount();
@@ -64,6 +64,11 @@ export function VaultDashboard() {
 
   // Write contracts
   const { writeContract: writeRouter, isPending: isRouterPending } = useWriteContract();
+  const { writeContract: writeToken, data: mintHash, isPending: isMinting } = useWriteContract();
+
+  const { isLoading: isMintConfirming } = useWaitForTransactionReceipt({
+    hash: mintHash,
+  });
 
   const handleRebalance = () => {
     writeRouter({
@@ -81,18 +86,32 @@ export function VaultDashboard() {
     });
   };
 
+  const handleMintLink = () => {
+    if (!address) return;
+    // Mint 100 LINK tokens (100 * 10^18)
+    const amount = parseTokenAmount("100");
+    writeToken({
+      address: CONTRACTS.LINK,
+      abi: ERC20_ABI,
+      functionName: "mint",
+      args: [address, amount],
+    });
+  };
+
   if (!isConnected) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        Please connect your wallet to view the vault dashboard
+      <div className="flex flex-col items-center justify-center py-20 glass-card rounded-2xl">
+        <Wallet className="w-16 h-16 text-gray-600 mb-4" />
+        <h3 className="text-xl font-medium text-gray-300">Wallet Not Connected</h3>
+        <p className="text-gray-500 mt-2">Connect your wallet to view the vault dashboard</p>
       </div>
     );
   }
 
   if (!hasValidContracts) {
     return (
-      <div className="text-center py-12">
-        <p className="text-yellow-400 mb-2">⚠️ Contract addresses not configured</p>
+      <div className="flex flex-col items-center justify-center py-20 glass-card rounded-2xl border-yellow-500/20">
+        <p className="text-yellow-400 mb-2 font-medium text-lg">⚠️ Contract addresses not configured</p>
         <p className="text-gray-400 text-sm">
           Please set contract addresses in your .env.local file
         </p>
@@ -106,94 +125,152 @@ export function VaultDashboard() {
   const userAssetsFormatted = userAssets ? formatTokenAmount(userAssets) : "0";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Total Assets</p>
-            <DollarSign className="w-5 h-5 text-blue-500" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <DollarSign className="w-24 h-24 text-blue-500" />
           </div>
-          <p className="text-2xl font-bold">{formatNumber(totalAssetsFormatted)} LINK</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Total Assets</p>
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <DollarSign className="w-5 h-5 text-blue-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-white">{formatNumber(totalAssetsFormatted)} <span className="text-sm text-gray-500 font-normal">LINK</span></p>
         </div>
 
-        <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Total Managed</p>
-            <TrendingUp className="w-5 h-5 text-green-500" />
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingUp className="w-24 h-24 text-green-500" />
           </div>
-          <p className="text-2xl font-bold">{formatNumber(totalManagedFormatted)} LINK</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Total Managed</p>
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-white">{formatNumber(totalManagedFormatted)} <span className="text-sm text-gray-500 font-normal">LINK</span></p>
         </div>
 
-        <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Your Shares</p>
-            <PieChart className="w-5 h-5 text-purple-500" />
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <PieChart className="w-24 h-24 text-purple-500" />
           </div>
-          <p className="text-2xl font-bold">{formatNumber(userSharesFormatted)}</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Your Shares</p>
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <PieChart className="w-5 h-5 text-purple-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-white">{formatNumber(userSharesFormatted)}</p>
         </div>
 
-        <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Your Assets</p>
-            <DollarSign className="w-5 h-5 text-yellow-500" />
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Wallet className="w-24 h-24 text-yellow-500" />
           </div>
-          <p className="text-2xl font-bold">{formatNumber(userAssetsFormatted)} LINK</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Your Assets</p>
+            <div className="p-2 bg-yellow-500/10 rounded-lg">
+              <Wallet className="w-5 h-5 text-yellow-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-white">{formatNumber(userAssetsFormatted)} <span className="text-sm text-gray-500 font-normal">LINK</span></p>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <button
-          onClick={() => setShowDeposit(true)}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-        >
-          Deposit
-        </button>
-        <button
-          onClick={() => setShowWithdraw(true)}
-          className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
-        >
-          Withdraw
-        </button>
-        <button
-          onClick={handleRebalance}
-          disabled={isRouterPending}
-          className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
-        >
-          {isRouterPending ? "Rebalancing..." : "Rebalance"}
-        </button>
-        <button
-          onClick={handleHarvest}
-          disabled={isRouterPending}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
-        >
-          {isRouterPending ? "Harvesting..." : "Harvest All"}
-        </button>
-      </div>
+      {/* Main Actions Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Quick Actions */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="glass-card p-6 rounded-2xl">
+            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5 text-blue-400" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => setShowDeposit(true)}
+                className="group relative overflow-hidden p-4 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 text-left"
+              >
+                <div className="relative z-10">
+                  <p className="font-semibold text-white text-lg">Deposit</p>
+                  <p className="text-blue-100 text-sm opacity-80">Add liquidity to the vault</p>
+                </div>
+                <div className="absolute -right-4 -bottom-4 bg-white/10 w-20 h-20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500" />
+              </button>
 
-      {/* Strategies */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-        <h2 className="text-xl font-bold mb-4">Strategies</h2>
-        <div className="space-y-4">
-          {portfolioState && portfolioState[0]?.length > 0 ? (
-            portfolioState[0].map((strategy, index) => (
-              <StrategyCard
-                key={strategy}
-                strategy={strategy}
-                balance={portfolioState[1][index]}
-                target={portfolioState[2][index]}
-                totalManaged={totalManaged || BigInt(0)}
-              />
-            ))
-          ) : (
-            <p className="text-gray-400">No strategies configured</p>
-          )}
+              <button
+                onClick={() => setShowWithdraw(true)}
+                className="group relative overflow-hidden p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 text-left"
+              >
+                <div className="relative z-10">
+                  <p className="font-semibold text-white text-lg">Withdraw</p>
+                  <p className="text-gray-400 text-sm">Redeem your shares</p>
+                </div>
+              </button>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <button
+                onClick={handleMintLink}
+                disabled={isMinting || isMintConfirming || !address}
+                className="px-4 py-3 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <DollarSign size={16} />
+                {isMinting || isMintConfirming ? "Minting..." : "Mint Mock LINK"}
+              </button>
+
+              <button
+                onClick={handleRebalance}
+                disabled={isRouterPending}
+                className="px-4 py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <ArrowRightLeft size={16} />
+                {isRouterPending ? "Rebalancing..." : "Rebalance"}
+              </button>
+
+              <button
+                onClick={handleHarvest}
+                disabled={isRouterPending}
+                className="px-4 py-3 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Sprout size={16} />
+                {isRouterPending ? "Harvesting..." : "Harvest All"}
+              </button>
+            </div>
+          </div>
+
+          {/* Strategies Section */}
+          <div className="glass-card p-6 rounded-2xl">
+            <h3 className="text-lg font-semibold text-white mb-6">Active Strategies</h3>
+            <div className="space-y-4">
+              {portfolioState && portfolioState[0]?.length > 0 ? (
+                portfolioState[0].map((strategy, index) => (
+                  <StrategyCard
+                    key={strategy}
+                    strategy={strategy}
+                    balance={portfolioState[1][index]}
+                    target={portfolioState[2][index]}
+                    totalManaged={totalManaged || BigInt(0)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                  No strategies configured
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Activity */}
+        <div className="lg:col-span-1">
+          <ActivityCard />
         </div>
       </div>
-
-      {/* Activity */}
-      <ActivityCard />
 
       {/* Modals */}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
@@ -201,4 +278,3 @@ export function VaultDashboard() {
     </div>
   );
 }
-
