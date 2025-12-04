@@ -21,6 +21,7 @@ contract MockAavePoolB {
 
     mapping(address => Reserve) public reserves;
     address public admin;
+    uint256 public boost = 200;
 
     // user => token => debt
     mapping(address => mapping(address => uint256)) public userDebt;
@@ -56,30 +57,43 @@ contract MockAavePoolB {
         });
     }
 
+    function setBoost(uint256 _b) external {
+        require(_b > 0 && _b <= 10000, "invalid boost");
+        boost = _b;
+    }
+
     // Interest Accrual — increases aToken exchangeRate
     function accrue(address token) public {
         Reserve storage r = reserves[token];
-        uint256 dt = block.timestamp - r.lastUpdated;
-        if (dt == 0) return;
+        uint256 lastTime = r.lastUpdated;
 
-        uint256 year = 365 days;
-        uint256 supplyDelta = (r.supplyApy * dt) / year; // 1e18 scale
-        uint256 borrowDelta = (r.borrowApy * dt) / year;
-
-        // growth factor = 1 + rate
-        uint256 newIndex =
-            (r.liquidityIndex * (1e18 + supplyDelta)) / 1e18;
-        r.liquidityIndex = newIndex;
-
-        // update aToken exchange rate
-        MockAToken(r.aToken).setExchangeRate(newIndex);
-
-        // optional: grow borrow index too
-        r.variableBorrowIndex =
-            (r.variableBorrowIndex * (1e18 + borrowDelta)) / 1e18;
+        uint256 dt = block.timestamp - lastTime;
+        if (dt == 0) return; // nothing to update
 
         r.lastUpdated = block.timestamp;
+
+        // Time constants
+        uint256 YEAR = 365 days;
+
+        // Apply yield boost for accelerated simulation
+        uint256 supplyDelta  = (r.supplyApy * dt * boost) / YEAR;
+        uint256 borrowDelta  = (r.borrowApy * dt * boost) / YEAR;
+
+        // New liquidity index (Aave-like compounding)
+        uint256 newLiquidityIndex =
+            (r.liquidityIndex * (1e18 + supplyDelta)) / 1e18;
+
+        uint256 newBorrowIndex =
+            (r.variableBorrowIndex * (1e18 + borrowDelta)) / 1e18;
+
+        // Update state
+        r.liquidityIndex = newLiquidityIndex;
+        r.variableBorrowIndex = newBorrowIndex;
+
+        // Update aToken exchange rate
+        MockAToken(r.aToken).setExchangeRate(newLiquidityIndex);
     }
+
 
     // SUPPLY
     function supply(address token, uint256 amt, address onBehalfOf, uint16) external {
