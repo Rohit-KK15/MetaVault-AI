@@ -13,9 +13,11 @@ config();
  */
 export const envSchema = z.object({
 	ADK_DEBUG: z.coerce.boolean().default(false),
-	OPEN_ROUTER_KEY: z.string().min(1),
+	OPEN_ROUTER_KEY: z.string(),
+	GOOGLE_API_KEY: z.string(),
 	LLM_MODEL: z.string().default("openai/gpt-4.1"),
 	RPC_URL: z.string().min(1),
+	PRIVATE_KEY: z.string().min(1),
 	VAULT_ADDRESS: z.string().min(1),
 	ROUTER_ADDRESS: z.string().min(1),
 	STRATEGY_LEVERAGE_ADDRESS: z.string().min(1),
@@ -24,7 +26,8 @@ export const envSchema = z.object({
 	MOCK_SWAP_ROUTER_ADDRESS: z.string().min(1),
 	MOCK_PDP_ADDRESS: z.string().min(1),
 	LINK_ADDRESS: z.string().min(1),
-	WETH_ADDRESS: z.string().min(1)
+	WETH_ADDRESS: z.string().min(1),
+	MOCK_ORACLE_ADDRESS: z.string().min(1)
 });
 
 /**
@@ -33,7 +36,9 @@ export const envSchema = z.object({
  */
 export const env = envSchema.parse(process.env);
 export let model: LanguageModelV2;
-const openrouter = createOpenRouter({
-	apiKey: env.OPEN_ROUTER_KEY
-});
-model = openrouter(env.LLM_MODEL);
+if(env.OPEN_ROUTER_KEY){
+	const openrouter = createOpenRouter({
+		apiKey: env.OPEN_ROUTER_KEY
+	});
+	model = openrouter(env.LLM_MODEL);
+}
