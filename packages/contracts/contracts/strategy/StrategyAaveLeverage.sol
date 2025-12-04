@@ -27,6 +27,11 @@ interface ISwapRouterV2 {
     ) external returns (uint[] memory amounts);
 }
 
+/// Price oracle interface
+interface IPriceOracle {
+    function getPrice(address token) external view returns (uint256);
+}
+
 contract StrategyAaveLeverage is IStrategy {
     using SafeERC20 for IERC20;
 
@@ -40,6 +45,9 @@ contract StrategyAaveLeverage is IStrategy {
     // swap
     ISwapRouterV2 public immutable swapRouter;
     address public immutable WETH;
+    
+    // oracle
+    IPriceOracle public immutable oracle;
 
     // bookkeeping
     uint256 public deposited; // total principal deposited by vault (for accounting)
@@ -74,7 +82,8 @@ contract StrategyAaveLeverage is IStrategy {
         address _pool,
         address _dataProvider,
         address _swapRouter,
-        address _weth
+        address _weth,
+        address _oracle
     ) {
         token = IERC20(_asset);
         vault = _vault;
@@ -83,6 +92,7 @@ contract StrategyAaveLeverage is IStrategy {
         dataProvider = IProtocolDataProvider(_dataProvider);
         swapRouter = ISwapRouterV2(_swapRouter);
         WETH = _weth;
+        oracle = IPriceOracle(_oracle);
 
         // safe approvals: we only approve tokens that exist; using SafeERC20
         // approve token -> pool (for supplying LINK)
@@ -300,9 +310,20 @@ contract StrategyAaveLeverage is IStrategy {
             if (debt == 0) break;
 
             // --------------------------------------------------------------------
-            // 1. Withdraw enough LINK from Aave to repay outstanding WETH debt
+            // 1. Calculate how much LINK we need to withdraw to repay WETH debt
+            // Use oracle to convert WETH debt to LINK equivalent
             // --------------------------------------------------------------------
-            uint256 withdrawAmt = deposited > debt ? debt : deposited;
+            uint256 price = oracle.getPrice(WETH); // LINK per WETH (scaled 1e18)
+            // debt is in WETH, we need: debt * price / 1e18 LINK to get enough WETH
+            // Add 5% buffer for slippage and rounding
+            uint256 linkNeeded = (debt * price * 105) / (1e18 * 100);
+            
+            // Get available collateral in Aave
+            uint256 availableCollateral = pool.getUnderlyingValue(address(this), address(token));
+            if (availableCollateral == 0) break;
+            
+            // Withdraw the minimum of what we need and what's available
+            uint256 withdrawAmt = linkNeeded <= availableCollateral ? linkNeeded : availableCollateral;
             if (withdrawAmt == 0) break;
 
             uint256 gotLINK = pool.withdraw(address(token), withdrawAmt, address(this));
@@ -315,43 +336,61 @@ contract StrategyAaveLeverage is IStrategy {
             path[0] = address(token);
             path[1] = WETH;
 
-            uint256 linkBefore = token.balanceOf(address(this));
             uint256 wethBefore = IERC20(WETH).balanceOf(address(this));
 
-            uint[] memory amounts = swapRouter.swapExactTokensForTokens(
+            try swapRouter.swapExactTokensForTokens(
                 gotLINK,
-                0,
+                0, // Accept any amount out (slippage protection could be added)
                 path,
                 address(this),
                 block.timestamp + 300
-            );
+            ) returns (uint[] memory) {
+                // Swap succeeded
+            } catch {
+                // Swap failed - try to repay with whatever WETH we might have
+                break;
+            }
 
             uint256 wethOut = IERC20(WETH).balanceOf(address(this)) - wethBefore;
             if (wethOut == 0) break;
 
             // --------------------------------------------------------------------
-            // 3. Approve pool to pull WETH
+            // 3. Approve pool to pull WETH (use max to avoid multiple approvals)
             // --------------------------------------------------------------------
             IERC20(WETH).approve(address(pool), wethOut);
 
             // --------------------------------------------------------------------
-            // 4. Repay debt
+            // 4. Repay debt (repay as much as we can, up to the debt amount)
             // --------------------------------------------------------------------
-            uint256 repaid = pool.repay(WETH, wethOut, 2, address(this));
+            uint256 repayAmount = wethOut <= debt ? wethOut : debt;
+            uint256 repaid = pool.repay(WETH, repayAmount, 2, address(this));
 
-            // Update bookkeeping
+            // Update bookkeeping based on actual amounts
             if (borrowedWETH <= repaid) borrowedWETH = 0;
             else borrowedWETH -= repaid;
 
-            if (deposited <= withdrawAmt) deposited = 0;
-            else deposited -= withdrawAmt;
+            // Update deposited based on actual LINK withdrawn (not the calculated amount)
+            // This is approximate - in reality, we should track this more precisely
+            if (deposited <= gotLINK) deposited = 0;
+            else deposited -= gotLINK;
         }
     }
 
 
 
     function strategyBalance() public view override returns (uint256) {
-        return pool.getUnderlyingValue(address(this), address(token));
+        uint256 collateral = pool.getUnderlyingValue(address(this), address(token));
+        uint256 idle = token.balanceOf(address(this));
+        uint256 total = collateral + idle;
+    
+        if (borrowedWETH == 0) return total;
+    
+        uint256 price = oracle.getPrice(WETH); // LINK per WETH
+        uint256 debtValue = borrowedWETH * price / 1e18;
+    
+        if (debtValue >= total) return 0;
+        return total - debtValue;
     }
+
 
 }

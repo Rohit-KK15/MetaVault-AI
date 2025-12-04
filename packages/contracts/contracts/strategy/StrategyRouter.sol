@@ -89,8 +89,6 @@ contract StrategyRouter is Ownable {
         balances = new uint256[](strats.length);
         targets  = new uint256[](strats.length);
 
-        uint256 total = _computeTotalManaged();
-
         for (uint256 i = 0; i < strats.length; i++) {
             balances[i] = IStrategy(strats[i]).strategyBalance();
             targets[i]  = targetBps[strats[i]];
@@ -176,6 +174,7 @@ contract StrategyRouter is Ownable {
     // ------------------------------------------------------------
 
     function rebalance() external onlyOwner {
+        // Calculate initial total managed assets
         uint256 totalManaged = _computeTotalManaged();
 
         // Pull excess from overweight strategies
@@ -187,15 +186,23 @@ contract StrategyRouter is Ownable {
             if (current > desired) {
                 uint256 excess = current - desired;
 
-                // strategy → vault
-                IStrategy(strat).withdrawToVault(excess);
-                vault.receiveFromStrategy(excess);
+                // strategy → vault (with error handling)
+                try IStrategy(strat).withdrawToVault(excess) returns (uint256 withdrawn) {
+                    if (withdrawn > 0) {
+                        vault.receiveFromStrategy(withdrawn);
+                    }
+                } catch (bytes memory reason) {
+                    emit StrategyWithdrawFailed(strat, _decodeRevertReason(reason));
+                    // Continue to next strategy even if this one fails
+                }
             }
         }
 
-        // Push to underweight strategies
+        // Recalculate total managed after withdrawals (vault balance may have increased)
+        totalManaged = _computeTotalManaged();
         uint256 vaultBal = vault.totalAssets();
 
+        // Push to underweight strategies
         for (uint256 i = 0; i < strategies.length; i++) {
             address strat = strategies[i];
             uint256 current = IStrategy(strat).strategyBalance();
@@ -205,15 +212,23 @@ contract StrategyRouter is Ownable {
                 uint256 need = desired - current;
                 uint256 amt = need <= vaultBal ? need : vaultBal;
 
-                // vault → strategy
-                vault.moveToStrategy(strat, amt);
-                IStrategy(strat).invest(amt);
-
-                vaultBal -= amt;
+                if (amt > 0) {
+                    // vault → strategy (with error handling)
+                    // Move funds first (trusted vault operation)
+                    vault.moveToStrategy(strat, amt);
+                    
+                    // Then invest (may fail, so wrap in try-catch)
+                    try IStrategy(strat).invest(amt) {
+                        vaultBal -= amt;
+                    } catch (bytes memory reason) {
+                        emit StrategyWithdrawFailed(strat, _decodeRevertReason(reason));
+                        // Funds are already in strategy but not invested - continue to next strategy
+                    }
+                }
             }
         }
 
-        emit Rebalanced(totalManaged);
+        emit Rebalanced(_computeTotalManaged());
     }
 
     // ------------------------------------------------------------
@@ -230,11 +245,24 @@ contract StrategyRouter is Ownable {
     // allow owner to instruct a strategy to unwind/deleverage
     function triggerDeleverage(address strat, uint256 maxLoops) external onlyOwner {
         require(strat != address(0), "zero strat");
+        require(maxLoops > 0, "maxLoops must be > 0");
+        
+        // Optional: validate that strategy is in the list (comment out if you want to allow external strategies)
+        // bool isRegistered = false;
+        // for (uint256 i = 0; i < strategies.length; i++) {
+        //     if (strategies[i] == strat) {
+        //         isRegistered = true;
+        //         break;
+        //     }
+        // }
+        // require(isRegistered, "strategy not registered");
+        
         // call deleverageAll in try/catch
         try IStrategy(strat).deleverageAll(maxLoops) {
             emit DeleverageTriggered(strat, maxLoops);
         } catch (bytes memory reason) {
             emit StrategyWithdrawFailed(strat, _decodeRevertReason(reason));
+            // Don't revert - emit event and continue (allows partial deleveraging attempts)
         }
     }
 

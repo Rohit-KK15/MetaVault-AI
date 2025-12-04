@@ -151,9 +151,13 @@ contract MockAavePoolB {
         return userDebt[user][token];
     }
 
-    function getUnderlyingValue(address user, address token) external view returns (uint256) {
-        Reserve storage r = reserves[token];
-        uint256 aBal = IERC20(r.aToken).balanceOf(user);
-        return (aBal * r.liquidityIndex) / 1e18;
+    function getUnderlyingValue(address user, address token)
+        external
+        view
+        returns (uint256)
+    {
+        // Use aToken's underlyingValue which accounts for exchange rate (accrued interest)
+        return MockAToken(reserves[token].aToken).underlyingValue(user);
     }
+
 }

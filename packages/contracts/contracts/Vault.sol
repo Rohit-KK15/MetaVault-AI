@@ -8,13 +8,13 @@ import "hardhat/console.sol";
 
 interface IStrategyRouter {
     function getStrategies() external view returns (address[] memory);
+
     function withdrawFromStrategies(uint256) external;
 }
 
 interface IStrategy {
     function strategyBalance() external view returns (uint256);
 }
-
 
 contract Vault is ERC20, Ownable {
     using SafeERC20 for IERC20;
@@ -23,14 +23,14 @@ contract Vault is ERC20, Ownable {
     uint256 public performanceFeeBps; // e.g., 1000 = 10%
     address public feeRecipient;
 
-
     event Deposit(address indexed user, uint256 amount, uint256 shares);
     event Withdraw(address indexed user, uint256 amount, uint256 shares);
 
-    constructor(address _asset, address _feeRecipient, uint256 _bps)
-        ERC20("Vault Share Token", "VST")
-        Ownable(msg.sender)
-    {
+    constructor(
+        address _asset,
+        address _feeRecipient,
+        uint256 _bps
+    ) ERC20("Vault Share Token", "VST") Ownable(msg.sender) {
         asset = IERC20(_asset);
         feeRecipient = _feeRecipient;
         performanceFeeBps = _bps;
@@ -59,8 +59,8 @@ contract Vault is ERC20, Ownable {
     }
 
     function deposit(uint256 amount) external returns (uint256) {
-        asset.safeTransferFrom(msg.sender, address(this), amount);
         uint256 shares = convertToShares(amount);
+        asset.safeTransferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, amount, shares);
         return shares;
@@ -69,8 +69,6 @@ contract Vault is ERC20, Ownable {
     function withdraw(uint256 shares) external returns (uint256 assetsOut) {
         require(shares > 0, "zero shares");
         require(balanceOf(msg.sender) >= shares, "not enough shares");
-
-        uint256 totalAssetsBefore = totalManagedAssets();
 
         // 1. Calculate assets owed
         assetsOut = convertToAssets(shares);
@@ -92,7 +90,10 @@ contract Vault is ERC20, Ownable {
             IStrategyRouter(router).withdrawFromStrategies(needed);
 
             uint256 newVaultBal = asset.balanceOf(address(this));
-            require(newVaultBal >= assetsOut, "not enough liquidity after pull");
+            require(
+                newVaultBal >= assetsOut,
+                "not enough liquidity after pull"
+            );
         }
 
         // 5. Transfer assets to user
@@ -100,7 +101,6 @@ contract Vault is ERC20, Ownable {
 
         emit Withdraw(msg.sender, assetsOut, shares);
     }
-
 
     // ─────────────────────────────────────────────
     //   STRATEGY ROUTER ACCESS (ONLY ROUTER)
@@ -117,8 +117,11 @@ contract Vault is ERC20, Ownable {
     }
 
     // router moves funds FROM vault → to strategy
-    function moveToStrategy(address strategy, uint256 amount) external onlyRouter {
-        console.log("Approving ", amount," to StrategyUniV3....");
+    function moveToStrategy(
+        address strategy,
+        uint256 amount
+    ) external onlyRouter {
+        console.log("Approving ", amount, " to StrategyUniV3....");
         asset.approve(strategy, amount);
         console.log("Transferring LINK from Vault to StrategyUniV3....");
         asset.safeTransfer(strategy, amount);
@@ -144,7 +147,6 @@ contract Vault is ERC20, Ownable {
         }
     }
 
-
     function totalManagedAssets() public view returns (uint256) {
         uint256 total = asset.balanceOf(address(this));
 
@@ -158,5 +160,4 @@ contract Vault is ERC20, Ownable {
 
         return total;
     }
-
 }
