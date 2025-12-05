@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent } from "wagmi";
 import { CONTRACTS, VAULT_ABI, ROUTER_ABI, ERC20_ABI, isValidAddress } from "@/lib/contracts";
 import { formatTokenAmount, formatNumber, parseTokenAmount } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -55,49 +55,87 @@ export function VaultDashboard() {
   }, [isConnected, hasValidContracts]);
 
   // Read vault state
-  const { data: totalAssets } = useReadContract({
+  const { data: totalAssets, refetch: refetchTotalAssets } = useReadContract({
     address: CONTRACTS.VAULT,
     abi: VAULT_ABI,
     functionName: "totalAssets",
-    query: { enabled: isConnected && hasValidContracts },
+    query: { enabled: isConnected && hasValidContracts, refetchInterval: 3000 },
   });
 
-  const { data: totalManaged } = useReadContract({
+  const { data: totalManaged, refetch: refetchTotalManaged } = useReadContract({
     address: CONTRACTS.VAULT,
     abi: VAULT_ABI,
     functionName: "totalManagedAssets",
-    query: { enabled: isConnected && hasValidContracts },
+    query: { enabled: isConnected && hasValidContracts, refetchInterval: 3000 },
   });
 
-  const { data: totalSupply } = useReadContract({
+  const { data: totalSupply, refetch: refetchTotalSupply } = useReadContract({
     address: CONTRACTS.VAULT,
     abi: VAULT_ABI,
     functionName: "totalSupply",
-    query: { enabled: isConnected && hasValidContracts },
+    query: { enabled: isConnected && hasValidContracts, refetchInterval: 3000 },
   });
 
-  const { data: userShares } = useReadContract({
+  const { data: userShares, refetch: refetchUserShares } = useReadContract({
     address: CONTRACTS.VAULT,
     abi: VAULT_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: isConnected && !!address && hasValidContracts },
+    query: { enabled: isConnected && !!address && hasValidContracts, refetchInterval: 3000 },
   });
 
-  const { data: userAssets } = useReadContract({
+  const { data: userAssets, refetch: refetchUserAssets } = useReadContract({
     address: CONTRACTS.VAULT,
     abi: VAULT_ABI,
     functionName: "convertToAssets",
     args: userShares ? [userShares] : undefined,
-    query: { enabled: isConnected && !!userShares && hasValidContracts },
+    query: { enabled: isConnected && !!userShares && hasValidContracts, refetchInterval: 3000 },
   });
 
   // Read portfolio state
-  const { data: portfolioState } = useReadContract({
+  const { data: portfolioState, refetch: refetchPortfolio } = useReadContract({
     address: CONTRACTS.ROUTER,
     abi: ROUTER_ABI,
     functionName: "getPortfolioState",
-    query: { enabled: isConnected && hasValidContracts },
+    query: { enabled: isConnected && hasValidContracts, refetchInterval: 3000 },
+  });
+
+  // Real-time Event Listeners
+  const refetchAll = () => {
+    refetchTotalAssets();
+    refetchTotalManaged();
+    refetchTotalSupply();
+    refetchUserShares();
+    refetchUserAssets();
+    refetchPortfolio();
+  };
+
+  useWatchContractEvent({
+    address: CONTRACTS.VAULT,
+    abi: VAULT_ABI,
+    eventName: 'Deposit',
+    onLogs: () => refetchAll(),
+  });
+
+  useWatchContractEvent({
+    address: CONTRACTS.VAULT,
+    abi: VAULT_ABI,
+    eventName: 'Withdraw',
+    onLogs: () => refetchAll(),
+  });
+
+  useWatchContractEvent({
+    address: CONTRACTS.ROUTER,
+    abi: ROUTER_ABI,
+    eventName: 'Rebalanced',
+    onLogs: () => refetchAll(),
+  });
+
+  useWatchContractEvent({
+    address: CONTRACTS.ROUTER,
+    abi: ROUTER_ABI,
+    eventName: 'Harvested',
+    onLogs: () => refetchAll(),
   });
 
   // Write contracts
