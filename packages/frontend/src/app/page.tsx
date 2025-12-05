@@ -22,8 +22,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab("vault")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === "vault"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                : "text-gray-400 hover:bg-white/5 hover:text-white"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+              : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
           >
             <LayoutDashboard size={20} />
@@ -33,8 +33,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab("agent")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === "agent"
-                ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
-                : "text-gray-400 hover:bg-white/5 hover:text-white"
+              ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+              : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
           >
             <Bot size={20} />
@@ -59,9 +59,13 @@ export default function Home() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-8 overflow-auto">
-          {activeTab === "vault" && <VaultDashboard />}
-          {activeTab === "agent" && <AgentChat />}
+        <div className="flex-1 p-8 overflow-auto relative">
+          <div className={activeTab === "vault" ? "block" : "hidden"}>
+            <VaultDashboard />
+          </div>
+          <div className={`h-full ${activeTab === "agent" ? "block" : "hidden"}`}>
+            <AgentChat />
+          </div>
         </div>
       </div>
     </div>
