@@ -182,4 +182,4 @@ cd packages/frontend
 
 ## 📄 License
 
-[MIT](LICENSE)
+[MIT](LICENSE.md)
