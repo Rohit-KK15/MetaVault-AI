@@ -1,4 +1,4 @@
-# SmarDeFi Vault
+# MetaVault AI
 
 An AI-Powered DeFi Vault managed by AI Agents created using ADK-TS by IQAI. This project combines a secure smart contract vault, a modern Next.js frontend, and intelligent agents to optimize DeFi strategies.
 
@@ -14,7 +14,7 @@ This is a monorepo containing the following packages:
 
 This project is a showcase of the **ADK-TS (Agent Development Kit)** by IQAI, demonstrating how to build complex, autonomous DeFi agents using TypeScript.
 
-**How ADK-TS Powers SmarDeFi:**
+**How ADK-TS Powers MetaVault AI:**
 
 1.  **Conversation Orchestration Layer**:
     *   **Session Memory**: Handles conversation memory for the session.
@@ -62,23 +62,35 @@ The vault is managed by a team of specialized AI agents:
 
 ## 🏦 Vault Strategies
 
-The SmarDeFi Vault allocates user funds into multiple strategies to maximize yield while managing risk:
+The MetaVault allocates user funds into multiple strategies to maximize yield while managing risk.  
+_For development and testing purposes, all strategies currently run on **mock contracts** to simulate Aave mechanics, liquidity indices, borrowing flows, and interest behavior._
+
+---
 
 ### 1. Aave V3 Strategy (Safe)
-- **Description**: A low-risk strategy that supplies assets (e.g., USDC, LINK) to the Aave V3 lending pool.
-- **Mechanism**: Earns passive supply APY from the lending market.
-- **Risk Profile**: Low. Principal is protected, subject only to smart contract risk.
+
+- **Description**: A low-risk strategy that supplies assets (LINK) to a mock Aave V3 lending pool used for testing.
+- **Mechanism**: Earns simulated passive supply APY using a mocked liquidity index.
+- **Risk Profile**: Low. In production, this maps to real Aave behavior, but in the current environment it operates on mock contracts for predictable testing.
+- **Mock Note**: The entire interest accrual is driven by a mock liquidity index set to `1e18` unless programmatically updated.
+
+---
 
 ### 2. Aave Leverage Strategy (Aggressive)
-- **Description**: A high-yield strategy that uses looping to leverage the supply position.
-- **Mechanism**:
-    1. Supplies LINK to Aave.
-    2. Borrows WETH against the LINK collateral.
-    3. Swaps borrowed WETH for more LINK.
-    4. Resupplies the LINK.
-    5. Repeats this process up to `maxDepth` times (configurable).
-- **Risk Profile**: High. Vulnerable to liquidation if the collateral value drops significantly relative to the debt.
-- **AI Management**: The **Strategy Sentinel Agent** actively manages this risk by monitoring the LTV and auto-deleveraging if it approaches dangerous levels.
+
+- **Description**: A high-yield strategy that simulates leveraged looping by interacting with a mocked Aave pool and mock swap router.
+- **Mechanism**:  
+  1. Supplies LINK to mocked Aave.  
+  2. Borrows mock WETH against the LINK collateral.  
+  3. Swaps borrowed WETH for LINK using a mock swap contract.  
+  4. Resupplies the LINK.  
+  5. Repeats the loop for `maxDepth` iterations.
+
+- **Risk Profile**: High. Reflects the risks of real leverage (e.g., liquidation), though all liquidation thresholds and LTV calculations are currently performed through mocked logic.
+
+- **AI Management**:  
+  The **Strategy Sentinel Agent** monitors mock LTV values and real LINK/WETH prices and then performs simulated auto-deleveraging when the position approaches the configured danger zone.
+
 
 ---
 
@@ -116,17 +128,17 @@ cd packages/contracts
 
 - **Compile contracts**:
   ```bash
-  npx hardhat compile
+  pnpm hardhat compile
   ```
 
 - **Run local node**:
   ```bash
-  npx hardhat node
+  pnpm hardhat node
   ```
 
 - **Deploy contracts**:
   ```bash
-  npx hardhat ignition deploy ./ignition/modules/Lock.ts --network localhost
+  pnpm hardhat run scripts/deploy_mocks.ts --network localhost
   ```
   *(Note: Update the deployment script path as necessary based on your specific modules)*
 
@@ -145,12 +157,12 @@ cd packages/agents/defi-portfolio
 
 - **Run Agent Server**:
   ```bash
-  pnpm dev:server
+  pnpm run dev:server
   ```
 
 - **Run Automation Cron**:
   ```bash
-  pnpm automate:cron
+  pnpm run automate:cron
   ```
 
 ### 3. Frontend (`packages/frontend`)
