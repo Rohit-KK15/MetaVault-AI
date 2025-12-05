@@ -36,7 +36,7 @@ export const envSchema = z.object({
  */
 export const env = envSchema.parse(process.env);
 export let model: LanguageModelV2;
-if(env.OPEN_ROUTER_KEY){
+if (env.OPEN_ROUTER_KEY) {
 	const openrouter = createOpenRouter({
 		apiKey: env.OPEN_ROUTER_KEY
 	});
