@@ -3,18 +3,56 @@
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { CONTRACTS, VAULT_ABI, ROUTER_ABI, ERC20_ABI, isValidAddress } from "@/lib/contracts";
 import { formatTokenAmount, formatNumber, parseTokenAmount } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DepositModal } from "./DepositModal";
 import { WithdrawModal } from "./WithdrawModal";
 import { StrategyCard } from "./StrategyCard";
 import { ActivityCard } from "./ActivityCard";
-import { TrendingUp, DollarSign, PieChart, Wallet, ArrowRightLeft, Sprout } from "lucide-react";
+import { TrendingUp, DollarSign, PieChart, Wallet, ArrowRightLeft, Sprout, Percent } from "lucide-react";
 
 export function VaultDashboard() {
   const { address, isConnected } = useAccount();
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [apyData, setApyData] = useState<{
+    apy: number;
+    readable: string;
+    tvl?: number;
+    growth?: number;
+    dt?: number;
+    message?: string;
+  } | null>(null);
+  const [isLoadingApy, setIsLoadingApy] = useState(false);
   const hasValidContracts = isValidAddress(CONTRACTS.VAULT) && isValidAddress(CONTRACTS.ROUTER);
+
+  // Fetch APY data (optional feature - doesn't block other functionality)
+  useEffect(() => {
+    if (!isConnected || !hasValidContracts) return;
+
+    const fetchAPY = async () => {
+      try {
+        const response = await fetch("/api/vault/apy");
+        if (response.ok) {
+          const data = await response.json();
+          // Only set data if there's no error field
+          if (!data.error) {
+            setApyData(data);
+          }
+        }
+      } catch (error) {
+        // Silently fail - APY is optional
+        console.error("Failed to fetch APY:", error);
+      } finally {
+        setIsLoadingApy(false);
+      }
+    };
+
+    setIsLoadingApy(true);
+    fetchAPY();
+    // Refresh APY every 30 seconds
+    const interval = setInterval(fetchAPY, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected, hasValidContracts]);
 
   // Read vault state
   const { data: totalAssets } = useReadContract({
@@ -127,7 +165,7 @@ export function VaultDashboard() {
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <DollarSign className="w-24 h-24 text-blue-500" />
@@ -178,6 +216,30 @@ export function VaultDashboard() {
             </div>
           </div>
           <p className="text-3xl font-bold text-white">{formatNumber(userAssetsFormatted)} <span className="text-sm text-gray-500 font-normal">LINK</span></p>
+        </div>
+
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Percent className="w-24 h-24 text-cyan-500" />
+          </div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Vault APY</p>
+            <div className="p-2 bg-cyan-500/10 rounded-lg">
+              <Percent className="w-5 h-5 text-cyan-400" />
+            </div>
+          </div>
+          {isLoadingApy ? (
+            <p className="text-3xl font-bold text-white">Loading...</p>
+          ) : apyData ? (
+            <div>
+              <p className="text-3xl font-bold text-white">{apyData.readable}</p>
+              {apyData.message && (
+                <p className="text-xs text-gray-500 mt-1">{apyData.message}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-3xl font-bold text-gray-500">--</p>
+          )}
         </div>
       </div>
 
