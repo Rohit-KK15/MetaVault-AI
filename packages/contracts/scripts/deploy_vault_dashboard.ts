@@ -11,12 +11,13 @@ async function main() {
     console.log("Using existing LINK Token at:", linkAddress);
 
     // 2. Deploy Vault
-    // Constructor: address _asset, address _feeRecipient, uint256 _bps
+    // Constructor: address _asset, address _feeRecipient, uint256 _performanceBps, uint256 _withdrawFeeBps
     const feeRecipient = deployer.address;
     const performanceFeeBps = 1000; // 10%
+    const withdrawFeeBps = 100; // 1%
 
     const Vault = await ethers.getContractFactory("Vault");
-    const vault = await Vault.deploy(linkAddress, feeRecipient, performanceFeeBps);
+    const vault = await Vault.deploy(linkAddress, feeRecipient, performanceFeeBps, withdrawFeeBps);
     await vault.waitForDeployment();
     const vaultAddress = await vault.getAddress();
     console.log("Vault deployed to:", vaultAddress);
