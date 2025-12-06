@@ -118,7 +118,7 @@ export const check_allowance = createTool({
     amount: z.string(),
   }),
   fn: async ({ wallet, amount }) => {
-    const LINK = process.env.LINK_TOKEN_ADDRESS!;
+    const LINK = process.env.LINK_ADDRESS!;
     const VAULT = process.env.VAULT_ADDRESS!;
     const needed = parseUnits(amount);
 
@@ -145,7 +145,7 @@ export const approve_link = createTool({
     amount: z.string(),
   }),
   fn: async ({ amount }) => {
-    const LINK = process.env.LINK_TOKEN_ADDRESS!;
+    const LINK = process.env.LINK_ADDRESS!;
     const VAULT = process.env.VAULT_ADDRESS!;
 
     const iface = new ethers.Interface(MockERC20ABI.abi);
@@ -161,6 +161,7 @@ export const approve_link = createTool({
         value: "0"
       },
       message: `Please sign this transaction to approve ${amount} LINK for spending.`,
+      // step: 'approval'
     };
   },
 });
@@ -190,7 +191,8 @@ export const user_deposit = createTool({
         data,
         value: "0"
       },
-      message: `Please sign this deposit transaction for ${amount} LINK.`
+      message: `Please sign this deposit transaction for ${amount} LINK.`,
+      // step: 'deposit'
     };
 
   }
@@ -219,7 +221,8 @@ export const user_withdraw = createTool({
         data,
         value: "0"
       },
-      message: `Please sign this withdraw transaction for ${shares} LINK.`
+      message: `Please sign this withdraw transaction for ${shares} LINK.`,
+      // step: 'withdraw'
     };
   }
 });
