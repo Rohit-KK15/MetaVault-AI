@@ -110,6 +110,63 @@ export const get_public_vault_info = createTool({
   }
 });
 
+export const check_allowance = createTool({
+  name: "check_allowance",
+  description: "Checks if user's LINK token allowance is enough for a deposit.",
+  schema: z.object({
+    wallet: z.string(),
+    amount: z.string(),
+  }),
+  fn: async ({ wallet, amount }) => {
+    const LINK = process.env.LINK_TOKEN_ADDRESS!;
+    const VAULT = process.env.VAULT_ADDRESS!;
+    const needed = parseUnits(amount);
+
+    const allowance = await chain_read(
+      LINK,
+      MockERC20ABI.abi,
+      "allowance",
+      [wallet, VAULT]
+    );
+
+    return {
+      allowance: allowance.toString(),
+      enough: allowance >= needed,
+      needed: needed.toString(),
+      wallet,
+    };
+  },
+});
+
+export const approve_link = createTool({
+  name: "approve_link",
+  description: "Prepares an unsigned approval transaction so the vault can spend LINK.",
+  schema: z.object({
+    amount: z.string(),
+  }),
+  fn: async ({ amount }) => {
+    const LINK = process.env.LINK_TOKEN_ADDRESS!;
+    const VAULT = process.env.VAULT_ADDRESS!;
+
+    const iface = new ethers.Interface(MockERC20ABI.abi);
+    const data = iface.encodeFunctionData("approve", [
+      VAULT,
+      parseUnits(amount),
+    ]);
+
+    return {
+      unsignedTx: {
+        to: LINK,
+        data,
+        value: "0"
+      },
+      message: `Please sign this transaction to approve ${amount} LINK for spending.`,
+    };
+  },
+});
+
+
+
 /**
  * User deposit function
  */
@@ -135,7 +192,7 @@ export const user_deposit = createTool({
       },
       message: `Please sign this deposit transaction for ${amount} LINK.`
     };
-    
+
   }
 });
 
@@ -187,7 +244,7 @@ export const get_token_prices = createTool({
         chainlink?: { usd: number; usd_24h_change?: number };
         weth?: { usd: number; usd_24h_change?: number };
       };
-      
+
       const linkPriceUSD = data.chainlink?.usd || 0;
       const link24hChange = data.chainlink?.usd_24h_change || 0;
 
@@ -224,7 +281,7 @@ export const convert_to_shares = createTool({
       "convertToShares",
       [parseUnits(amount)]
     );
-    
+
     return format18(shares);
   }
 });
@@ -242,7 +299,7 @@ export const convert_to_assets = createTool({
       "convertToAssets",
       [parseUnits(shares)]
     );
-    
+
     return format18(linkAmount);
   }
 });
