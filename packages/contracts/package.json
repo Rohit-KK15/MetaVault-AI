@@ -1,5 +1,5 @@
 {
-  "name": "smardefi-vault-contracts",
+  "name": "metavault-contracts",
   "version": "1.0.0",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
