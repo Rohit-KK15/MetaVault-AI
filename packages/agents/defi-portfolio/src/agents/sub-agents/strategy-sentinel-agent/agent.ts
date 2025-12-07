@@ -1,5 +1,5 @@
 import { LlmAgent } from "@iqai/adk";
-import { env } from "../../../env";
+import { env, model } from "../../../env";
 import dedent from "dedent";
 import {
     get_strategy_states,
@@ -21,7 +21,7 @@ import {
 
 export async function getStrategySentinelAgent() {
     return new LlmAgent({
-        name: "StrategySentinelAgent",
+        name: "strategy_sentinel_agent",
         description: "A agent that monitors and manages the strategies in the Vault.",
         instruction: dedent`
         You are the Strategy Sentinel Agent, responsible for monitoring, analyzing, and managing every strategy within the portfolio.
@@ -159,7 +159,7 @@ export async function getStrategySentinelAgent() {
         
             You may chain multiple tools to reach the correct conclusion.
         `,
-        model: env.LLM_MODEL,
+        model: model,
         tools: [
             get_strategy_states,
             get_user_balances,

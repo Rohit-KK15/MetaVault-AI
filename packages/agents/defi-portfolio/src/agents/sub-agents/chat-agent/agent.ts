@@ -1,5 +1,5 @@
 import { AgentBuilder, LlmAgent } from "@iqai/adk";
-import { env } from "../../../env";
+import { env, model } from "../../../env";
 import dedent from "dedent";
 import {
   get_user_vault_balance,
@@ -16,7 +16,7 @@ import {
 } from "./tools";
 
 export const chatAgent = new LlmAgent({
-  name: "ChatAgent",
+  name: "chat_agent",
   description: "A user-friendly assistant for vault users to interact with the DeFi vault, check balances, deposit, withdraw, and get public information.",
   instruction: dedent`
 You are a friendly and helpful DeFi Vault Assistant. Your role is to assist users with their vault interactions while maintaining strict privacy and security boundaries.
@@ -124,7 +124,7 @@ Where:
 Remember: You assist users with guided vault interactions while maintaining strict security. Always prioritize clarity, safety, and correctness.
 
     `,
-  model: env.LLM_MODEL,
+  model: model,
   tools: [
     get_user_vault_balance,
     get_wallet_link_balance,
