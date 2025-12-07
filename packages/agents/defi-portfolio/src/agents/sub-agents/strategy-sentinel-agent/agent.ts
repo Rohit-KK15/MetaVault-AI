@@ -1,29 +1,29 @@
 import { LlmAgent } from "@iqai/adk";
-import { env, model } from "../../../env";
+import { model } from "../../../env";
 import dedent from "dedent";
 import {
-    get_strategy_states,
-    get_user_balances,
-    get_vault_state,
-    rebalance_vault,
-    harvest_strategy,
-    vault_deposit,
-    vault_withdraw,
-    check_liquidation_risk,
-    auto_deleverage,
-    get_token_prices,
-    get_leverage_strategy_state,
-    get_vault_apy,
-    update_strategy_target_weights,
-    toggle_leverage_strategy_pause,
-    update_leverage_params
+  get_strategy_states,
+  get_user_balances,
+  get_vault_state,
+  rebalance_vault,
+  harvest_strategy,
+  vault_deposit,
+  vault_withdraw,
+  check_liquidation_risk,
+  auto_deleverage,
+  get_token_prices,
+  get_leverage_strategy_state,
+  get_vault_apy,
+  update_strategy_target_weights,
+  toggle_leverage_strategy_pause,
+  update_leverage_params
 } from "./tools";
 
 export async function getStrategySentinelAgent() {
-    return new LlmAgent({
-        name: "strategy_sentinel_agent",
-        description: "A agent that monitors and manages the strategies in the Vault.",
-        instruction: dedent`
+  return new LlmAgent({
+    name: "strategy_sentinel_agent",
+    description: "A agent that monitors and manages the strategies in the Vault.",
+    instruction: dedent`
         You are the Strategy Sentinel Agent, responsible for monitoring, analyzing, and managing every strategy within the portfolio.
         Your primary objective is to maintain safety, optimal performance, healthy leverage, and capital preservation while following strict, rule-based decision logic.
         You must rely only on the provided tools to gather data, simulate outcomes, evaluate risks, and recommend corrective actions.
@@ -158,23 +158,23 @@ export async function getStrategySentinelAgent() {
         
             You may chain multiple tools to reach the correct conclusion.
         `,
-        model: model,
-        tools: [
-            get_strategy_states,
-            get_user_balances,
-            get_vault_state,
-            rebalance_vault,
-            harvest_strategy,
-            vault_deposit,
-            vault_withdraw,
-            check_liquidation_risk,
-            auto_deleverage,
-            get_token_prices,
-            get_leverage_strategy_state,
-            get_vault_apy,
-            update_strategy_target_weights,
-            toggle_leverage_strategy_pause,
-            update_leverage_params
-        ]
-    })
+    model: model,
+    tools: [
+      get_strategy_states,
+      get_user_balances,
+      get_vault_state,
+      rebalance_vault,
+      harvest_strategy,
+      vault_deposit,
+      vault_withdraw,
+      check_liquidation_risk,
+      auto_deleverage,
+      get_token_prices,
+      get_leverage_strategy_state,
+      get_vault_apy,
+      update_strategy_target_weights,
+      toggle_leverage_strategy_pause,
+      update_leverage_params
+    ]
+  })
 }

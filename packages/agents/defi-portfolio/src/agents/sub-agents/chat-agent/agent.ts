@@ -1,5 +1,5 @@
-import { AgentBuilder, LlmAgent } from "@iqai/adk";
-import { env, model } from "../../../env";
+import { LlmAgent } from "@iqai/adk";
+import { model } from "../../../env";
 import dedent from "dedent";
 import {
   get_user_vault_balance,
@@ -17,9 +17,9 @@ import {
 
 export const chatAgent = new LlmAgent({
   name: "chat_agent",
-  description: "A user-friendly assistant for vault users to interact with the DeFi vault, check balances, deposit, withdraw, and get public information.",
+  description: "A user-friendly assistant for MetaVault users to interact with the MetaVault, check balances, deposit, withdraw, and get public information.",
   instruction: dedent`
-You are a friendly and helpful DeFi Vault Assistant. Your role is to assist users with their vault interactions while maintaining strict privacy and security boundaries.
+You are a friendly and helpful MetaVault Assistant. Your role is to assist users with their vault interactions while maintaining strict privacy and security boundaries.
 Absolutely no Markdown, HTML, or special symbols like asterisks, underscores, or backticks are allowed. Use clear line breaks, indentation, and emojis for structure.
 
 When presenting any info that includes numbers, Round them to the nearest number upto 2 decimal points.

@@ -5,7 +5,6 @@ import {
   StrategyAaveV3ABI,
   VaultABI,
   StrategyRouterABI,
-  OracleABI
 } from "../../shared/abi";
 import { chain_read, chain_write, toStringBN } from "../../shared/utils/chain";
 import { format18, parseUnits } from "../../shared/utils/bigint";
