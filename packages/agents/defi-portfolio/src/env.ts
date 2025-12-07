@@ -16,6 +16,8 @@ export const envSchema = z.object({
 	OPEN_ROUTER_KEY: z.string(),
 	GOOGLE_API_KEY: z.string(),
 	LLM_MODEL: z.string().default("openai/gpt-4.1"),
+	TELEGRAM_BOT_TOKEN: z.string().min(1),
+	TELEGRAM_CHANNEL_ID: z.string().min(1),
 	RPC_URL: z.string().min(1),
 	PRIVATE_KEY: z.string().min(1),
 	VAULT_ADDRESS: z.string().min(1),
