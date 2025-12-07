@@ -79,7 +79,7 @@ export function AgentChat() {
 
       if (data.unsignedTx && walletClient ) {
         console.log("Unsigned TX received from agent:", data.unsignedTx);
-        let txHash = await walletClient.sendTransaction(data.unsignedTx);
+        const txHash = await walletClient.sendTransaction(data.unsignedTx);
         
         const followup = await fetch("/api/agent", {
           method: "POST",
@@ -105,7 +105,7 @@ export function AgentChat() {
     
         // If this follow-up ALSO returns a tx → send deposit transaction
         if (followData.unsignedTx) {
-          txHash = await walletClient.sendTransaction(followData.unsignedTx);
+          const txHash = await walletClient.sendTransaction(followData.unsignedTx);
     
           setMessages(prev => [
             ...prev,
@@ -116,14 +116,6 @@ export function AgentChat() {
             }
           ]);
         }
-
-        const txMessage: Message = {
-          role: "assistant",
-          content: `🚀 Transaction submitted!\n\n**Tx Hash:** ${txHash}\n\nYou can track it on the block explorer.`,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, txMessage]);
       }
     } catch (err) {
       console.error(err);
