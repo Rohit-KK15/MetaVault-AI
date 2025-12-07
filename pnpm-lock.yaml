@@ -19,8 +19,8 @@ importers:
         specifier: ^20.11.5
         version: 20.19.25
       '@types/react':
-        specifier: ^19.2.6
-        version: 19.2.6
+        specifier: ^18.3.0
+        version: 18.3.27
       concurrently:
         specifier: ^9.1.0
         version: 9.2.1
@@ -2370,9 +2370,6 @@ packages:
 
   '@types/react@18.3.27':
     resolution: {integrity: sha512-cisd7gxkzjBKU2GgdYrTdtQx1SORymWyaAFhaxQPK9bYO9ot3Y5OikQRvY0VYQtvwjeQnizCINJAenh/V7MK2w==}
-
-  '@types/react@19.2.6':
-    resolution: {integrity: sha512-p/jUvulfgU7oKtj6Xpk8cA2Y1xKTtICGpJYeJXz2YVO2UcvjQgeRMLDGfDeqeRW2Ta+0QNFwcc8X3GH8SxZz6w==}
 
   '@types/request@2.48.13':
     resolution: {integrity: sha512-FGJ6udDNUCjd19pp0Q3iTiDkwhYup7J8hpMW9c4k53NrccQFFWKRho6hvtPPEhnXWKvukfwAlB6DbDz4yhH5Gg==}
@@ -10384,10 +10381,6 @@ snapshots:
   '@types/react@18.3.27':
     dependencies:
       '@types/prop-types': 15.7.15
-      csstype: 3.2.3
-
-  '@types/react@19.2.6':
-    dependencies:
       csstype: 3.2.3
 
   '@types/request@2.48.13':
