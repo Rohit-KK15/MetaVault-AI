@@ -200,7 +200,7 @@ export class MonitoringService {
       const runner = root.runner as EnhancedRunner;
 
       const result = await runner.ask(
-        "Quick check: Get LINK and WETH prices and flag >15% movement.",
+        "Quick check: Get LINK and WETH prices using get_token_prices tool and flag >15% movement.",
       );
 
       console.log(`[${new Date().toISOString()}] Quick Price Check →`, result);
