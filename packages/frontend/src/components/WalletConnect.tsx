@@ -2,10 +2,11 @@
 
 import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { Wallet, LogOut, Loader2, AlertCircle, ChevronDown } from 'lucide-react'
-import { formatAddress } from '@/lib/utils'
+import { formatAddress, formatTokenAmount, formatNumber } from '@/lib/utils'
+import { CONTRACTS, ERC20_ABI, isValidAddress } from '@/lib/contracts'
 
 /**
  * WalletConnect component - handles wallet connection, disconnection, and network switching
@@ -26,6 +27,7 @@ export function WalletConnect() {
   }, [])
 
   // Auto-switch to Sepolia if connected to wrong network
+  // Auto-switch to Sepolia if connected to wrong network
   useEffect(() => {
     if (isConnected && chainId !== sepolia.id) {
       const timer = setTimeout(() => {
@@ -34,6 +36,18 @@ export function WalletConnect() {
       return () => clearTimeout(timer)
     }
   }, [isConnected, chainId, switchChain])
+
+  const { data: balance } = useReadContract({
+    address: CONTRACTS.LINK,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: isConnected && !!address && isValidAddress(CONTRACTS.LINK),
+      refetchInterval: 5000
+    }
+  })
+
 
   // Handle wallet connection with specific connector
   const handleConnect = (connectorToUse: typeof connectors[0]) => {
@@ -64,6 +78,11 @@ export function WalletConnect() {
 
     return (
       <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-1 pr-4 backdrop-blur-sm">
+        {balance && (
+          <div className="hidden md:block px-3 py-1.5 text-sm font-medium text-gray-300 border-r border-white/10 mr-1">
+            {formatNumber(formatTokenAmount(balance))} LINK
+          </div>
+        )}
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isWrongNetwork
           ? 'bg-yellow-500/10 border-yellow-500/20'
           : 'bg-blue-500/10 border-blue-500/20'
