@@ -18,7 +18,7 @@ export function AgentChat() {
     {
       role: "assistant",
       content:
-        "Hello! I'm your DeFi Vault Assistant. I can help you check your balance, deposit LINK tokens, withdraw shares, and view public vault information.\n\nHow can I assist you today?",
+        "Hello! I'm your MetaVault Assistant. I can help you check your balance, deposit LINK tokens, withdraw shares, and view public vault information.\n\nHow can I assist you today?",
       timestamp: new Date(),
     },
   ]);
@@ -226,9 +226,6 @@ export function AgentChat() {
               <ArrowUp className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-center text-[11px] text-gray-600 mt-2">
-            AI can make mistakes. Check important info.
-          </p>
         </div>
       </div>
     </div>

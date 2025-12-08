@@ -224,7 +224,7 @@ export function VaultDashboard() {
     ? formatTokenAmount((userAssets))
     : "0";
 
-  const growthPercentFormatted = growthPercent ? parseFloat(formatUnits(growthPercent, 18)).toFixed(2) : "0.00";
+  const growthPercentFormatted = growthPercent ? parseFloat(formatUnits(growthPercent, 16)).toFixed(2) : "0.00";
   const growthColor = growthPercent && growthPercent >= 0n ? "text-green-400" : "text-red-400";
   const growthSign = growthPercent && growthPercent > 0n ? "+" : ""; // Only show + for strict positive, negative handled by number
 

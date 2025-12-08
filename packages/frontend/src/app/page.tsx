@@ -26,7 +26,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xs text-gray-500 pl-11 font-medium tracking-wide uppercase opacity-70">
-            Autonomous Strategy
+            Autonomous DeFi Vault
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default function Home() {
               }`}
           >
             <Bot size={18} className={activeTab === "agent" ? "text-violet-400" : "group-hover:text-gray-300"} />
-            <span className="font-medium text-sm">Strategy Agent</span>
+            <span className="font-medium text-sm">AI Assistant</span>
             {activeTab === "agent" && (
               <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
             )}
