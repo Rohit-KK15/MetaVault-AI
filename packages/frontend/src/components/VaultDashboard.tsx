@@ -53,9 +53,6 @@ export function VaultDashboard() {
 
     setIsLoadingApy(true);
     fetchAPY();
-    // Refresh APY every 30 seconds
-    const interval = setInterval(fetchAPY, 30000);
-    return () => clearInterval(interval);
   }, [isConnected, hasValidContracts]);
 
   // Read vault state
