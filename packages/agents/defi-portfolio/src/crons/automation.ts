@@ -14,13 +14,11 @@ import { env } from "../env";
 export class MonitoringService {
   private isRunning = false;
   private monitoringJob: ScheduledTask | null = null;
-  private quickCheckJob: ScheduledTask | null = null;
   private yieldGenerateJob: ScheduledTask | null = null;
 
   constructor(
-    private readonly monitoringCronExpr = "*/15 * * * *", // every 15 min
-    private readonly quickCheckCronExpr = "*/5 * * * *", // every 5 min
-    private readonly yieldGenerateCronExpr = "*/1 * * * *", // every 1 min
+    private readonly monitoringCronExpr = "0 */1 * * *", // every 1 hour
+    private readonly yieldGenerateCronExpr = "*/2 * * * *", // every 2 min
     private readonly telegramRunner: EnhancedRunner,
   ) { }
 
@@ -36,19 +34,9 @@ export class MonitoringService {
 
     console.log("🤖 Starting MonitoringService...");
     console.log(`📅 Comprehensive cycle: ${this.monitoringCronExpr}`);
-    console.log(`⏱️ Quick price check: ${this.quickCheckCronExpr}`);
     console.log(`💹 Yield generation: ${this.yieldGenerateCronExpr}`);
 
-    // Quick check every 5 minutes
-    this.quickCheckJob = cron.schedule(this.quickCheckCronExpr, async () => {
-      try {
-        await this.quickPriceCheck();
-      } catch (err) {
-        console.error("❌ quickPriceCheck error:", (err as Error).message);
-      }
-    });
-
-    // Full monitoring every 15 minutes
+    // Full monitoring every 1 Hour
     this.monitoringJob = cron.schedule(this.monitoringCronExpr, async () => {
       try {
         await this.runMonitoringCycle();
@@ -57,7 +45,7 @@ export class MonitoringService {
       }
     });
 
-    // Yield generation every 1 minute
+    // Yield generation every 2 minute
     this.yieldGenerateJob = cron.schedule(this.yieldGenerateCronExpr, async () => {
       try {
         await this.yieldGeneration();
@@ -79,7 +67,7 @@ export class MonitoringService {
     if (!this.isRunning) return;
     this.isRunning = false;
 
-    if (this.quickCheckJob) this.quickCheckJob.stop();
+    if (this.yieldGenerateJob) this.yieldGenerateJob.stop();
     if (this.monitoringJob) this.monitoringJob.stop();
 
     console.log("🛑 MonitoringService stopped");
@@ -140,7 +128,7 @@ export class MonitoringService {
       // 4. Vault & strategies
       console.log("💼 Step 4: Vault state...");
       const vaultCheck = await runner.ask(
-        "Fetch get_vault_state and get_strategy_states to determine if rebalancing is required.",
+        "Fetch get_vault_state and get_strategy_states to determine if rebalancing is required. Include the current Weights and the target weights of the strategies.",
       );
 
       // 5. Actions to take
@@ -148,10 +136,10 @@ export class MonitoringService {
       const actions = await runner.ask(
         dedent`
         Based on price, strategy, and risk:
-        - Suggest pausing or resuming leverage
-        - Suggest updating leverage parameters
-        - Suggest rebalancing if allocations diverge
-        - Suggest harvesting yields
+        - initiate pausing or resuming leverage
+        - initiate updating leverage parameters
+        - initiate rebalancing if allocations diverge
+        - initiate harvesting yields
         Provide reasoning and simulate transactions before recommending.
         `,
       );
@@ -192,26 +180,6 @@ export class MonitoringService {
   }
 
   /**
-   * Fast market check
-   */
-  public async quickPriceCheck(): Promise<void> {
-    try {
-      const root = await getRootAgent();
-      const runner = root.runner as EnhancedRunner;
-
-      const result = await runner.ask(
-        "Quick check: Get LINK and WETH prices using get_token_prices tool and flag >15% movement.",
-      );
-
-      console.log(`[${new Date().toISOString()}] Quick Price Check →`, result);
-    } catch (err: any) {
-      console.error("quickPriceCheck error:", err.message);
-      await this.sendTelegramSummary(
-        `❌ Quick price check failed: ${err.message}`,
-      );
-    }
-  }
-  /**
    * Yield generation
    */
   public async yieldGeneration(): Promise<void> {
@@ -232,26 +200,5 @@ export class MonitoringService {
     }
   }
 }
-
-
-
-/**
- * Auto-start (matches your original script behavior).
- * Remove this if you want manual control.
- */
-// const service = new MonitoringService();
-// service.start();
-
-// graceful shutdown
-// process.on("SIGINT", () => {
-//   console.log("👋 Stopping MonitoringService...");
-//   service.stop();
-//   process.exit(0);
-// });
-// process.on("SIGTERM", () => {
-//   console.log("👋 Stopping MonitoringService...");
-//   service.stop();
-//   process.exit(0);
-// });
 
 export default MonitoringService;
