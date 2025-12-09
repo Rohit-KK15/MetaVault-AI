@@ -14,7 +14,7 @@
     "dev:agents": "pnpm -C packages/agents/defi-portfolio dev",
     "dev:contracts": "pnpm -C packages/contracts hardhat compile && pnpm -C packages/contracts hardhat node",
     "dev:all": "concurrently \"pnpm dev:contracts\" \"pnpm dev:agents\" \"pnpm dev\"",
-    "build": "pnpm build:contracts && pnpm build:frontend && pnpm build:agents",
+    "build": "pnpm -C packages/frontend build",
     "build:frontend": "pnpm -C packages/frontend build",
     "build:agents": "pnpm -C packages/agents/defi-portfolio build",
     "build:contracts": "pnpm -C packages/contracts hardhat compile",
