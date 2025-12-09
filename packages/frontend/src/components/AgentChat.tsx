@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { Send, Bot, User, Sparkles, ArrowUp } from "lucide-react";
 
 interface Message {
@@ -13,6 +13,12 @@ interface Message {
 export function AgentChat() {
   const { isConnected, address } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+
+  if (!publicClient) {
+    console.error("Public client not ready");
+    return;
+  }
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -79,21 +85,42 @@ export function AgentChat() {
 
       if (data.unsignedTx && walletClient) {
         console.log("Unsigned TX received from agent:", data.unsignedTx);
+
+        // 1️⃣ Broadcast TX
         const txHash = await walletClient.sendTransaction(data.unsignedTx);
 
+        // 2️⃣ WAIT FOR CONFIRMATION
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash: txHash,
+        });
+
+        if (receipt.status !== "success") {
+          setMessages(prev => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `⚠️ Transaction failed. Hash: ${txHash}`,
+              timestamp: new Date(),
+            }
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        // 3️⃣ Now safely notify the agent that TX was confirmed
         const followup = await fetch("/api/agent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: "Transaction Signed !",
+            message: "Transaction Confirmed",
             sessionId,
-            wallet: address
+            wallet: address,
           }),
         });
 
         const followData = await followup.json();
 
-        // Render the agent's deposit message
+        // 4️⃣ Show agent reply
         setMessages(prev => [
           ...prev,
           {
@@ -103,20 +130,21 @@ export function AgentChat() {
           }
         ]);
 
-        // If this follow-up ALSO returns a tx → send deposit transaction
+        // 5️⃣ If second TX is required → send it only AFTER first confirmed
         if (followData.unsignedTx) {
-          const txHash = await walletClient.sendTransaction(followData.unsignedTx);
+          const txHash2 = await walletClient.sendTransaction(followData.unsignedTx);
 
           setMessages(prev => [
             ...prev,
             {
               role: "assistant",
-              content: `💰 Deposit transaction sent!\n\n**Tx Hash:** ${txHash}`,
+              content: `💰 Second transaction sent!\n\nTx Hash: ${txHash2}`,
               timestamp: new Date(),
             }
           ]);
         }
       }
+
     } catch (err) {
       console.error(err);
       const errorMessage: Message = {
