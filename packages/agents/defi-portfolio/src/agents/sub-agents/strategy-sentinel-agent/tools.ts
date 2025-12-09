@@ -47,33 +47,39 @@ export const get_vault_state = createTool({
 
 export const get_strategy_states = createTool({
   name: "get_strategy_states",
-  description: "Fetches detailed state for all strategies.",
+  description: "Fetches strategy addresses, their balances, and target BPS allocations from the Strategy Router.",
   fn: async () => {
-    const [
-      poolBal,
-      leverageDeposited,
-      leverageBorrowed
-    ] = await Promise.all([
-      chain_read(env.STRATEGY_AAVE_ADDRESS, StrategyAaveV3ABI.abi, "strategyBalance", []),
-      chain_read(env.STRATEGY_LEVERAGE_ADDRESS, StrategyLeverageABI.abi, "deposited", []),
-      chain_read(env.STRATEGY_LEVERAGE_ADDRESS, StrategyLeverageABI.abi, "borrowedWETH", []),
-    ]);
+    // 1) Call the router function once
+    const [strategies, balances, targets] = await chain_read(
+      env.ROUTER_ADDRESS,
+      StrategyRouterABI.abi,
+      "getPortfolioState",
+      []
+    );
 
-    const raw = {
-      aaveBal: poolBal.toString(),
-      levDeposited: leverageDeposited.toString(),
-      levBorrowed: leverageBorrowed.toString()
-    };
+    // 2) Transform into structured objects
+    const result = strategies.map((strat: string, i: number) => {
+      const rawBal = balances[i].toString();
+      const rawTarget = targets[i].toString();
 
-    const human = {
-      aaveBal: format18(raw.aaveBal),
-      levDeposited: format18(raw.levDeposited),
-      levBorrowed: format18(raw.levBorrowed),
-    };
+      return {
+        strategy: strat,
+        raw: {
+          balance: rawBal,
+          targetBps: rawTarget,
+        },
+        human: {
+          balance: format18(rawBal),
+          targetPercent: (Number(rawTarget) / 100).toFixed(2) + "%", // convert BPS → %
+        },
+      };
+    });
 
-    return toStringBN({ raw, human });
+    // 3) Return JSON stringified for the LLM
+    return JSON.stringify(result, null, 2);
   }
 });
+
 
 
 export const get_user_balances = createTool({
